@@ -1,0 +1,718 @@
+!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeMap 3D</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d1c;color:#f4f6ff;font-family:Arial,sans-serif}
+header{padding:18px;background:#111a32;text-align:center}
+.logo{font-size:25px;font-weight:bold;color:#72e5ff}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px;background:#111a32}
+button,select,input{padding:11px;border:0;border-radius:9px;font-size:15px}
+button{background:#596cff;color:white;cursor:pointer;margin:3px}
+button:hover{filter:brightness(1.15)}
+button:disabled{opacity:.5}
+nav button{white-space:nowrap;background:#202d4b}
+main{max-width:900px;margin:auto;padding:14px}
+section{display:none}
+section.active{display:block}
+.card{background:#141f38;border:1px solid #293958;border-radius:15px;padding:16px;margin:12px 0}
+h2{color:#78e5ff}
+h3{margin-bottom:6px}
+.muted{color:#aab8d3}
+.small{font-size:13px}
+input,select{background:#263756;color:white;width:100%;margin:5px 0}
+.stat{background:#1c2b4a;padding:12px;border-radius:12px;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat b{display:block;font-size:24px;color:#78e5ff}
+.planet{width:85px;height:85px;border-radius:50%;margin:10px auto;background:radial-gradient(circle at 30% 30%,#a7f5ff,#4b62dd,#151b5a);box-shadow:0 0 25px #536cff}
+.subjects{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.subject{background:#1b2947;border-radius:15px;padding:12px;text-align:center}
+.subject button{width:100%}
+.progress{height:10px;background:#293958;border-radius:20px;overflow:hidden}
+.progress div{height:100%;background:linear-gradient(90deg,#596cff,#72e5ff)}
+.option{display:block;width:100%;text-align:left;margin:7px 0;background:#263756}
+.option.correct{background:#167d62}
+.option.wrong{background:#a83d52}
+.task{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px;border-bottom:1px solid #293958}
+#memory{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#memory button{font-size:25px;min-height:65px}
+footer{text-align:center;color:#8494b3;padding:20px}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">🌌 LifeMap 3D</div>
+<div id="userLabel">Salom, sayohatchi!</div>
+</header>
+
+<nav>
+<button onclick="showPage('home')">🏠 Bosh sahifa</button>
+<button onclick="showPage('lessons')">📚 Darslar</button>
+<button onclick="showPage('quiz')">📝 Test</button>
+<button onclick="showPage('games')">🎮 O‘yinlar</button>
+<button onclick="showPage('tasks')">🎯 Vazifalar</button>
+<button onclick="showPage('mistakes')">📖 Xatolar</button>
+<button onclick="showPage('profile')">👤 Profil</button>
+</nav>
+
+<main>
+
+<section id="home" class="active">
+<div class="card" style="text-align:center">
+<div class="planet"></div>
+<h2>Bilim olamiga xush kelibsiz!</h2>
+<p class="muted">Har bir dars — yangi sayyora.</p>
+<input id="nameInput" placeholder="Ismingizni kiriting">
+<button onclick="saveName()">Boshlash 🚀</button>
+</div>
+
+<div class="stats">
+<div class="stat">⭐ XP<b id="xp">0</b></div>
+<div class="stat">🏆 Daraja<b id="level">1</b></div>
+<div class="stat">📚 Darslar<b id="lessonCount">3</b></div>
+<div class="stat">✅ To‘g‘ri javoblar<b id="correctCount">0</b></div>
+</div>
+
+<div class="card">
+<h2>🌠 Daraja rivojlanishi</h2>
+<div class="progress"><div id="levelBar" style="width:0%"></div></div>
+<p id="levelText" class="muted">Keyingi darajaga intiling!</p>
+</div>
+
+<div class="card">
+<h2>🔥 Kunlik challenge</h2>
+<p>Bugun kamida 5 ta test savoliga javob bering.</p>
+<p id="dailyStatus">Hali bajarilmadi</p>
+<button onclick="showPage('quiz')">Test boshlash</button>
+</div>
+</section>
+
+<section id="lessons">
+<h2>📚 Mening sayyoralarim</h2>
+<div id="subjectList" class="subjects"></div>
+<div class="card">
+<h3>➕ Yangi fan qo‘shish</h3>
+<input id="newSubject" placeholder="Masalan: Tarix">
+<button onclick="addSubject()">Fan qo‘shish</button>
+</div>
+<div class="card" id="lessonDetails">
+<p class="muted">Darsni tanlang.</p>
+</div>
+</section>
+
+<section id="quiz">
+<h2>📝 Bilim sinovi</h2>
+<div class="card">
+<label>Fan:</label>
+<select id="quizSubject"></select>
+<p class="muted">Har bir fandan 30 ta savol.</p>
+<p>1–10: Oson | 11–20: O‘rtacha | 21–30: Qiyin</p>
+<button onclick="startQuiz()">30 talik testni boshlash 🚀</button>
+</div>
+<div class="card" id="quizArea">
+<p class="muted">Testni boshlash uchun yuqoridagi tugmani bosing.</p>
+</div>
+</section>
+
+<section id="games">
+<h2>🎮 Bilim o‘yinlari</h2>
+<div class="card">
+<h3>🧠 Xotira o‘yini</h3>
+<p>Bir xil belgilarni toping.</p>
+<div id="memory"></div>
+<p id="memoryStatus"></p>
+<button onclick="startMemory()">Yangi o‘yin</button>
+</div>
+<div class="card">
+<h3>👑 Boss Challenge</h3>
+<p>5-darajaga yetganingizda maxsus sinov ochiladi.</p>
+<button onclick="bossChallenge()">Boss sinovini boshlash</button>
+<p id="bossStatus" class="muted"></p>
+</div>
+</section>
+
+<section id="tasks">
+<h2>🎯 Vazifalar</h2>
+<div class="card" id="taskList"></div>
+<div class="card">
+<h3>O‘zingizning vazifangiz</h3>
+<input id="taskInput" placeholder="Vazifa nomi">
+<button onclick="addTask()">Qo‘shish</button>
+</div>
+</section>
+
+<section id="mistakes">
+<h2>📖 Xatolar daftari</h2>
+<div class="card" id="mistakeList">Hozircha xatolar yo‘q.</div>
+<button onclick="clearMistakes()">Xatolarni tozalash</button>
+</section>
+
+<section id="profile">
+<h2>👤 Mening profilim</h2>
+<div class="card">
+<h3 id="profileName">Sayohatchi</h3>
+<p>⭐ Jami XP: <b id="profileXP">0</b></p>
+<p>🏆 Daraja: <b id="profileLevel">1</b></p>
+<p>✅ To‘g‘ri javoblar: <b id="profileCorrect">0</b></p>
+<p>📝 Ishlangan testlar: <b id="profileTests">0</b></p>
+<button onclick="resetData()">Barcha natijalarni o‘chirish</button>
+</div>
+</section>
+
+</main>
+<footer>LifeMap 3D © 2026 — Bilim bilan yangi olam sari!</footer>
+
+<script>
+const defaultData={
+"Ingliz tili":[
+["Apple so‘zining tarjimasi?",["Olma","Kitob","Qalam","Uy"],0],
+["Cat nima?",["It","Mushuk","Qush","Ot"],1],
+["Book nima?",["Ruchka","Daftar","Kitob","Stol"],2],
+["Red qaysi rang?",["Ko‘k","Qizil","Yashil","Oq"],1],
+["One nechchi?",["Bir","Ikki","Uch","To‘rt"],0],
+["Good nima?",["Yomon","Yaxshi","Katta","Kichik"],1],
+["Dog nima?",["Mushuk","It","Baliq","Qush"],1],
+["Water nima?",["Suv","Olov","Havo","Yer"],0],
+["Hello nimani anglatadi?",["Xayr","Salom","Rahmat","Kechirasiz"],1],
+["School nima?",["Maktab","Uy","Do‘kon","Bog‘"],0],
+["Past Simple qachon ishlatiladi?",["Kelajak","O‘tgan zamon","Hozirgi","Buyruq"],1],
+["Go fe'lining past shakli?",["Goed","Going","Went","Gone"],2],
+["Child ko‘plik shakli?",["Childs","Children","Childes","Child"],1],
+["Beautiful tarjimasi?",["Chiroyli","Yomon","Tez","Katta"],0],
+["She ___ a student.",["am","are","is","be"],2],
+["I have ___ apple.",["a","an","the","no"],1],
+["Big so‘zining antonimi?",["Large","Small","Tall","Huge"],1],
+["Write fe'lining past shakli?",["Writed","Wrote","Written","Writing"],1],
+["There ___ two books.",["is","are","am","be"],1],
+["How many days in a week?",["Five","Six","Seven","Eight"],2],
+["If I ___ rich, I would travel.",["am","was","were","be"],2],
+["The cake ___ by Tom.",["made","was made","make","making"],1],
+["He has lived here ___ 2020.",["for","since","at","on"],1],
+["Neither of them ___ ready.",["are","were","is","be"],2],
+["I wish I ___ fly.",["can","could","will","am"],1],
+["Despite ___ tired, he worked.",["be","being","been","is"],1],
+["Had I known, I ___ come.",["will","would have","would","can"],1],
+["The report must ___ today.",["finish","finished","be finished","finishing"],2],
+["She suggested ___ early.",["leave","to leave","leaving","left"],2],
+["By next year, I ___ graduated.",["will have","have","had","am"],0]
+],
+"Python":[
+["Python nima?",["Dasturlash tili","Brauzer","O‘yin","Telefon"],0],
+["Ekranga chiqarish buyrug‘i?",["input()","print()","open()","show()"],1],
+["O‘zgaruvchi qanday yoziladi?",["x = 5","5 = x","x == 5","var x"],0],
+["Matn turi?",["int","float","str","bool"],2],
+["Sonni kiritish buyrug‘i?",["print()","input()","write()","show()"],1],
+["Izoh belgisi?",["//","#","@","!"],1],
+["2 + 3 natijasi?",["4","5","6","7"],1],
+["Ro‘yxat turi?",["list","int","str","bool"],0],
+["Shart operatori?",["for","if","print","input"],1],
+["Funksiya yaratish?",["func","def","function","make"],1],
+["range(3) nechta qiymat beradi?",["2","3","4","5"],1],
+["len('salom') natijasi?",["4","5","6","7"],1],
+["3 ** 2 natijasi?",["6","9","8","5"],1],
+["Qoldiq olish operatori?",["/","//","%","**"],2],
+["Tenglikni tekshirish?",["=","==","!=",">="],1],
+["Ro‘yxat oxiriga qo‘shish?",["add()","append()","push()","put()"],1],
+["Siklni to‘xtatish?",["stop","break","exit","end"],1],
+["Siklni davom ettirish?",["continue","next","pass","skip"],0],
+["Lug‘at turi?",["list","tuple","dict","set"],2],
+["Mantiqiy qiymatlar?",["yes/no","true/false","1/2","on/off"],1],
+["Lambda nima?",["Anonim funksiya","Sikl","Ro‘yxat","Modul"],0],
+["try/except nima uchun?",["Xatolarni boshqarish","Matn chiqarish","Sikl","O‘zgaruvchi"],0],
+["Tuple xususiyati?",["O‘zgarmas","Har doim bo‘sh","Faqat son","Faqat matn"],0],
+["Set xususiyati?",["Takroriy elementlarni saqlaydi","Takrorlanmas elementlar","Faqat matn","Faqat son"],1],
+["O‘zgaruvchi turini aniqlash?",["type()","kind()","class()","typeof()"],0],
+["Fayl ochish funksiyasi?",["open()","file()","read()","start()"],0],
+["List comprehension nima?",["Ro‘yxat yaratish usuli","Siklni tugatish","Xato","Fayl"],0],
+["Rekursiya nima?",["Funksiya o‘zini chaqirishi","Sikl","O‘zgaruvchi","Matn"],0],
+["Modulni ulash?",["include","import","attach","module"],1],
+["if __name__ == '__main__' nima uchun?",["Asosiy faylni tekshirish","Matn chiqarish","Sikl","Ro‘yxat"],0]
+],
+"Matematika":[
+["5 + 7 = ?",["10","11","12","13"],2],
+["9 - 4 = ?",["3","4","5","6"],2],
+["6 × 3 = ?",["18","16","20","15"],0],
+["20 ÷ 5 = ?",["2","3","4","5"],2],
+["Eng kichik tub son?",["1","2","3","4"],1],
+["Kvadratning nechta tomoni bor?",["3","4","5","6"],1],
+["10 ning kvadrati?",["20","50","100","10"],2],
+["1 metr necha santimetr?",["10","100","1000","1"],1],
+["Uchburchak burchaklari yig‘indisi?",["90°","180°","270°","360°"],1],
+["12 ning yarmi?",["4","5","6","8"],2],
+["15 + 18 = ?",["31","32","33","34"],2],
+["7 × 8 = ?",["54","56","58","64"],1],
+["144 ning kvadrat ildizi?",["10","11","12","14"],2],
+["3² + 4² = ?",["12","25","49","7"],1],
+["2x = 14 bo‘lsa, x = ?",["5","6","7","8"],2],
+["100 ning 25 foizi?",["10","20","25","50"],2],
+["5/10 qisqartirilsa?",["1/2","1/3","2/5","5/2"],0],
+["To‘g‘ri burchak necha gradus?",["45°","90°","180°","360°"],1],
+["Perimetr nima?",["Tomonlar yig‘indisi","Yuza","Hajm","Balandlik"],0],
+["3, 6, 9, keyingi son?",["10","11","12","15"],2],
+["x² = 49 bo‘lsa, musbat x?",["5","6","7","8"],2],
+["(a+b)² formulasi?",["a²+b²","a²+2ab+b²","a²-2ab+b²","a+b"],1],
+["2x + 5 = 17. x = ?",["5","6","7","8"],1],
+["1/3 + 1/6 = ?",["1/2","2/3","1/9","1/6"],0],
+["0,2 kasr ko‘rinishida?",["1/2","1/5","2/5","1/4"],1],
+["Uchburchak yuzi formulasi?",["a×b","a×h/2","2a+2b","a+b"],1],
+["x² - 9 = 0 tenglama ildizlari?",["3","-3","±3","9"],2],
+["2, 4, 8, 16, keyingi son?",["20","24","30","32"],3],
+["(x+2)(x-2) nimaga teng?",["x²+4","x²-4","x²-2","x²+2"],1],
+["sin 30° qiymati?",["0","1","1/2","√3/2"],2]
+]
+};
+
+const initial={
+name:"Sayohatchi",xp:0,correct:0,tests:0,daily:0,
+subjects:Object.keys(defaultData),
+questions:{},mistakes:[],
+tasks:[
+{name:"Bugun 5 ta test ishlash",done:false,xp:20},
+{name:"Bitta yangi mavzu o‘rganish",done:false,xp:15},
+{name:"Xatolarni qayta ko‘rib chiqish",done:false,xp:10}
+]
+};
+
+let data;
+try{
+data=JSON.parse(localStorage.getItem("lifeMapFull"))||initial;
+}catch(e){data=initial}
+if(!data.questions)data.questions={};
+if(!data.mistakes)data.mistakes=[];
+if(!data.tasks)data.tasks=initial.tasks;
+if(!data.subjects)data.subjects=initial.subjects;
+if(data.daily===undefined)data.daily=0;
+if(data.correct===undefined)data.correct=0;
+if(data.tests===undefined)data.tests=0;
+if(data.xp===undefined)data.xp=0;
+if(!data.name)data.name="Sayohatchi";
+
+Object.keys(defaultData).forEach(s=>{
+if(!data.questions[s]||data.questions[s].length<30)
+data.questions[s]=defaultData[s];
+});
+
+let quiz=[],qIndex=0,score=0,answered=false,timer=null,timeLeft=20;
+let memoryCards=[],memoryOpen=[],memoryMatches=0;
+
+function save(){
+localStorage.setItem("lifeMapFull",JSON.stringify(data));
+render();
+}
+
+function level(){return Math.floor(data.xp/100)+1}
+
+function showPage(id){
+document.querySelectorAll("main section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+render();
+}
+
+function saveName(){
+let n=document.getElementById("nameInput").value.trim();
+if(n)data.name=n;
+save();
+}
+
+function render(){
+document.getElementById("userLabel").textContent="Salom, "+data.name+"!";
+document.getElementById("xp").textContent=data.xp;
+document.getElementById("level").textContent=level();
+document.getElementById("lessonCount").textContent=data.subjects.length;
+document.getElementById("correctCount").textContent=data.correct;
+document.getElementById("profileName").textContent=data.name;
+document.getElementById("profileXP").textContent=data.xp;
+document.getElementById("profileLevel").textContent=level();
+document.getElementById("profileCorrect").textContent=data.correct;
+document.getElementById("profileTests").textContent=data.tests;
+document.getElementById("levelBar").style.width=(data.xp%100)+"%";
+document.getElementById("levelText").textContent="Keyingi darajagacha: "+(100-data.xp%100)+" XP";
+document.getElementById("dailyStatus").textContent=data.daily>=5?"✅ Kunlik challenge bajarildi!":"Bajarilgan: "+data.daily+"/5";
+renderSubjects();
+renderSelect();
+renderTasks();
+renderMistakes();
+}
+
+function renderSubjects(){
+let box=document.getElementById("subjectList");
+box.innerHTML="";
+data.subjects.forEach((s,i)=>{
+let d=document.createElement("div");
+d.className="subject";
+d.innerHTML='<div class="planet"></div><h3></h3><p class="muted"></p><button>Darsni ochish</button>';
+d.querySelector("h3").textContent=s;
+d.querySelector("p").textContent=(data.questions[s]||[]).length+" ta savol";
+d.querySelector("button").onclick=()=>openLesson(s);
+box.appendChild(d);
+});
+}
+
+function renderSelect(){
+let el=document.getElementById("quizSubject");
+let old=el.value;
+el.innerHTML="";
+data.subjects.forEach(s=>{
+let o=document.createElement("option");
+o.value=s;o.textContent=s;el.appendChild(o);
+});
+if(data.subjects.includes(old))el.value=old;
+}
+
+function addSubject(){
+let s=document.getElementById("newSubject").value.trim();
+if(!s)return alert("Fan nomini kiriting!");
+if(data.subjects.includes(s))return alert("Bu fan mavjud!");
+data.subjects.push(s);
+data.questions[s]=[];
+document.getElementById("newSubject").value="";
+save();
+openLesson(s);
+}
+
+function openLesson(s){
+let box=document.getElementById("lessonDetails");
+box.innerHTML="";
+let h=document.createElement("h2");h.textContent="📘 "+s;
+let p=document.createElement("p");p.textContent="Bu fan bo‘yicha savollar: "+data.questions[s].length;
+let btn=document.createElement("button");btn.textContent="Testni boshlash";
+btn.onclick=()=>{document.getElementById("quizSubject").value=s;showPage("quiz")};
+let h3=document.createElement("h3");h3.textContent="O‘z savolingizni qo‘shish";
+let input=document.createElement("input");input.placeholder="Savol matni";
+let opts=[];
+for(let i=0;i<4;i++){
+let inp=document.createElement("input");
+inp.placeholder="Javob "+(i+1);
+opts.push(inp);
+box.appendChild(inp);
+}
+let sel=document.createElement("select");
+["Oson","O‘rtacha","Qiyin"].forEach((x,i)=>{
+let o=document.createElement("option");o.value=i;o.textContent=x;sel.appendChild(o);
+});
+let correct=document.createElement("select");
+for(let i=0;i<4;i++){
+let o=document.createElement("option");o.value=i;o.textContent="To‘g‘ri javob: "+(i+1);correct.appendChild(o);
+}
+let add=document.createElement("button");add.textContent="Savolni saqlash";
+add.onclick=()=>{
+let q=input.value.trim(),a=opts.map(x=>x.value.trim());
+if(!q||a.some(x=>!x))return alert("Savol va 4 ta javobni to‘ldiring!");
+data.questions[s].push({q,a,c:Number(correct.value),d:Number(sel.value)});
+save();openLesson(s);
+};
+box.append(h,p,btn,h3,input,sel,correct,add);
+}
+
+function getQuestion(q,index){
+if(Array.isArray(q))return {q:q[0],a:q[1],c:q[2],d:index<10?0:index<20?1:2};
+return q;
+}
+
+function startQuiz(){
+let s=document.getElementById("quizSubject").value;textContent="📚 Fan: "+m.subject;
+let q=document.createElement("p");
+q.textContent="❓ Savol: "+m.q;
+let c=document.createElement("p");
+c.textContent="✅ To‘g‘ri javob: "+m.correct;
+let y=document.createElement("p");
+y.textContent="❌ Sizning javobingiz: "+m.your;
+let d=document.createElement("div");
+d.className="card";
+d.append(q,c,y);
+box.appendChild(d);
+});
+}
+
+function clearMistakes(){
+if(!confirm("Barcha xatolarni o‘chirmoqchimisiz?"))return;
+data.mistakes=[];
+save();
+}
+
+function bossChallenge(){
+if(level()<5){
+document.getElementById("bossStatus").textContent=
+"🔒 Boss sinovi 5-darajadan boshlab ochiladi. Hozirgi darajangiz: "+level();
+return;
+}
+let questions=[
+["HTML nimani anglatadi?",["Dasturlash tili","Belgilash tili","Operatsion tizim","Brauzer"],1],
+["CSS nima uchun ishlatiladi?",["Dizayn uchun","Hisoblash uchun","Ma'lumot saqlash uchun","Internet uchun"],0],
+["JavaScript nima qiladi?",["Faqat rasm chizadi","Saytga interaktivlik qo‘shadi","Faqat matn yozadi","Fayl o‘chiradi"],1],
+["Python bu nima?",["Dasturlash tili","Telefon","Brauzer","O‘yin"],0],
+["HTML fayl kengaytmasi qaysi?",[".jpg",".mp3",".html",".pdf"],2]
+];
+
+let correct=0;
+let index=0;
+let box=document.getElementById("quizArea");
+showPage("quiz");
+
+function ask(){
+if(index>=questions.length){
+let reward=correct*20;
+data.xp+=reward;
+save();
+box.innerHTML="<h2>👑 Boss sinovi tugadi!</h2><p>Natija: "+correct+"/5</p><p>Yutuq: "+reward+" XP</p>";
+document.getElementById("bossStatus").textContent="Boss sinovi yakunlandi!";
+return;
+}
+let q=questions[index];
+box.innerHTML="<h3>👑 Boss savoli "+(index+1)+"/5</h3><p>"+q[0]+"</p>";
+q[1].forEach((a,i)=>{
+let b=document.createElement("button");
+b.className="option";
+b.textContent=a;
+b.onclick=()=>{
+if(i===q[2])correct++;
+index++;
+ask();
+};
+box.appendChild(b);
+});
+}
+ask();
+}
+
+function startMemory(){
+let icons=["🚀","🌍","⭐","🌙","🪐","☄️","🌟","🛸"];
+memoryCards=[...icons,...icons].sort(()=>Math.random()-0.5);
+memoryOpen=[];
+memoryMatches=0;
+
+let box=document.getElementById("memory");
+box.innerHTML="";
+memoryCards.forEach((icon,i)=>{
+let b=document.createElement("button");
+b.textContent="❔";
+b.dataset.index=i;
+b.onclick=()=>flipCard(i,b);
+box.appendChild(b);
+});
+document.getElementById("memoryStatus").textContent="Bir xil belgilarni toping!";
+}
+
+function flipCard(i,b){
+if(memoryOpen.length===2||b.textContent!=="❔")return;
+b.textContent=memoryCards[i];
+memoryOpen.push({i,b});
+
+if(memoryOpen.length===2){
+let [a,c]=memoryOpen;
+if(memoryCards[a.i]===memoryCards[c.i]){
+memoryMatches++;
+memoryOpen=[];
+if(memoryMatches===8){
+data.xp+=30;
+save();
+document.getElementById("memoryStatus").textContent="🎉 G‘alaba! +30 XP";
+}else{
+document.getElementById("memoryStatus").textContent="✅ To‘g‘ri juftlik!";
+}
+}else{
+setTimeout(()=>{
+a.b.textContent="❔";
+c.b.textContent="❔";
+memoryOpen=[];
+},800);
+}
+}
+}
+
+function resetData(){
+if(!confirm("Barcha natijalar o‘chirilsinmi?"))return;
+localStorage.removeItem("lifeMapFull");
+location.reload();
+}
+
+render();
+startMemory();
+</script>
+</body>
+</html>
+textContent="📚 Fan: "+m.subject;
+let q=document.createElement("p");
+q.textContent="❓ Savol: "+m.q;
+let c=document.createElement("p");
+c.textContent="✅ To‘g‘ri javob: "+m.correct;
+let y=document.createElement("p");
+y.textContent="❌ Sizning javobingiz: "+m.your;
+let d=document.createElement("div");
+d.className="card";
+
+d.append(q,c,y);
+box.appendChild(d);
+});
+}
+
+function clearMistakes(){
+if(!confirm("Barcha xatolarni o‘chirmoqchimisiz?"))return;
+data.mistakes=[];
+save();
+}
+
+function bossChallenge(){
+if(level()<5){
+document.getElementById("bossStatus").textContent=
+"🔒 Boss sinovi 5-darajadan boshlab ochiladi. Hozirgi darajangiz: "+level();
+return;
+}
+
+let questions=[
+["HTML nimani anglatadi?",["Dasturlash tili","Belgilash tili","Operatsion tizim","Brauzer"],1],
+["CSS nima uchun ishlatiladi?",["Dizayn uchun","Hisoblash uchun","Ma'lumot saqlash uchun","Internet uchun"],0],
+["JavaScript nima qiladi?",["Faqat rasm chizadi","Saytga interaktivlik qo‘shadi","Faqat matn yozadi","Fayl o‘chiradi"],1],
+["Python bu nima?",["Dasturlash tili","Telefon","Brauzer","O‘yin"],0],
+["HTML fayl kengaytmasi qaysi?",[".jpg",".mp3",".html",".pdf"],2]
+];
+
+let correct=0;
+let index=0;
+let box=document.getElementById("quizArea");
+showPage("quiz");
+
+function ask(){
+if(index>=questions.length){
+let reward=correct*20;
+data.xp+=reward;
+save();
+box.innerHTML="<h2>👑 Boss sinovi tugadi!</h2><p>Natija: "+correct+"/5</p><p>Yutuq: "+reward+" XP</p>";
+document.getElementById("bossStatus").textContent="Boss sinovi yakunlandi!";
+return;
+}
+
+let q=questions[index];
+box.innerHTML="<h3>👑 Boss savoli "+(index+1)+"/5</h3><p>"+q[0]+"</p>";
+
+q[1].forEach((a,i)=>{
+let b=document.createElement("button");
+b.className="option";
+b.textContent=a;
+b.onclick=()=>{
+if(i===q[2])correct++;
+index++;
+ask();
+};
+box.appendChild(b);
+});
+}
+ask();
+}
+
+function startMemory(){
+let icons=["🚀","🌍","⭐","🌙","🪐","☄️","🌟","🛸"];
+memoryCards=[...icons,...icons].sort(()=>Math.random()-0.5);
+memoryOpen=[];
+memoryMatches=0;
+
+let box=document.getElementById("memory");
+box.innerHTML="";
+
+memoryCards.forEach((icon,i)=>{
+let b=document.createElement("button");
+b.textContent="❔";
+b.dataset.index=i;
+b.onclick=()=>flipCard(i,b);
+box.appendChild(b);
+});
+
+document.getElementById("memoryStatus").textContent="Bir xil belgilarni toping!";
+}
+
+function flipCard(i,b){
+if(memoryOpen.length===2||b.textContent!=="❔")return;
+
+b.textContent=memoryCards[i];
+memoryOpen.push({i,b});
+
+if(memoryOpen.length===2){
+let [a,c]=memoryOpen;
+
+if(memoryCards[a.i]===memoryCards[c.i]){
+memoryMatches++;
+memoryOpen=[];
+
+if(memoryMatches===8){
+data.xp+=30;
+save();
+document.getElementById("memoryStatus").textContent="🎉 G‘alaba! +30 XP";
+}else{
+document.getElementById("memoryStatus").textContent="✅ To‘g‘ri juftlik!";
+}
+}else{
+setTimeout(()=>{
+a.b.textContent="❔";
+c.b.textContent="❔";
+memoryOpen=[];
+},800);
+}
+}
+}
+
+function resetData(){
+if(!confirm("Barcha natijalar o‘chirilsinmi?"))return;
+localStorage.removeItem("lifeMapFull");
+location.reload();
+}
+
+render();
+startMemory();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
